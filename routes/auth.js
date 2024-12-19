@@ -1,15 +1,19 @@
-// routes/auth.routes.js (Updated)
+// routes/auth.js (Updated)
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/auth.controller');
-const authenticateToken = require('../middleware/auth.middleware');
+const authController = require('../controllers/auth');
+const authMiddleware = require('../middleware/auth');
 const User = require('../models/User');
+const roleAuth = require('../middleware/roleAuth');
 
-// Existing routes
-router.post('/register', authController.register);
+//routes
+router.post('/signup', authController.signup);
 router.post('/login', authController.login);
-router.post('/logout', authController.logout);
-
+router.post('/logout', authMiddleware, authController.logout);
+router.get('/users', authMiddleware, roleAuth(['admin']), authController.getAllUsers)
+router.post('/users/add-user', authMiddleware, roleAuth(['admin']), authController.addUser)
+router.post('/users/:id', authMiddleware, roleAuth(['admin']), authController.deleteUser)
+router.put('/users/update-password', authMiddleware, authController.updatePassword)
 
 module.exports = router;
 

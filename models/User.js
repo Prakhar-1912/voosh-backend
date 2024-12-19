@@ -2,19 +2,9 @@
 const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema({
-    username: { type: String, required: true, unique: true },
-    name: { type: String, default: ''},
-    userbio: { type: String, default: ''},
-    mobile: { type: String, required: true },
     email: { type: String, required: true },
     password: { type: String }, // For JWT authentication
-    oauthProvider: { type: String, enum: ["google", null], default: null }, // For OAuth
-    oauthId: { type: String, default: null }, // For OAuth
-    profilePicture: { type: String }, // URL for profile picture
-    friends: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Friend relationships
-    pendingFriendRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    sentFriendRequests: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    groups: [{ type: mongoose.Schema.Types.ObjectId, ref: "Group" }], // User’s groups
+    role: { type: String},
     createdAt: { type: Date, default: Date.now },
 });
 

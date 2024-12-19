@@ -4,7 +4,7 @@ const config = require("./config/config");
 const errorHandler = require("./middleware/errorHandler");
 const rateLimiter = require("./middleware/rateLimiter");
 const cors = require("cors");
-const routes = require('./routes/index');
+const router = require('./routes/index');
 const cookieParser = require('cookie-parser');
 const mongoSanitize = require('express-mongo-sanitize');
 const logger = require('./utils/logger');
@@ -42,26 +42,26 @@ app.use(mongoSanitize());
 // app.use(express.static(path.join(__dirname, 'public')));
 
 // Database connection with retry logic and exponential backoff
-// const connectWithRetry = async (retryCount = 0) => {
-//   const maxRetries = 5;
-//   const baseDelay = 1000; // 1 second
+const connectWithRetry = async (retryCount = 0) => {
+  const maxRetries = 5;
+  const baseDelay = 1000; // 1 second
 
-//   try {
-//     await connectDB();
-//     logger.info('MongoDB connected successfully');
-//   } catch (err) {
-//     if (retryCount < maxRetries) {
-//       const delay = baseDelay * Math.pow(2, retryCount);
-//       logger.error(`MongoDB connection error. Retrying in ${delay / 1000} seconds... (Attempt ${retryCount + 1}/${maxRetries})`);
-//       setTimeout(() => connectWithRetry(retryCount + 1), delay);
-//     } else {
-//       logger.error('Failed to connect to MongoDB after maximum retries. Exiting...');
-//       process.exit(1);
-//     }
-//   }
-// };
+  try {
+    await connectDB();
+    logger.info('MongoDB connected successfully');
+  } catch (err) {
+    if (retryCount < maxRetries) {
+      const delay = baseDelay * Math.pow(2, retryCount);
+      logger.error(`MongoDB connection error. Retrying in ${delay / 1000} seconds... (Attempt ${retryCount + 1}/${maxRetries})`);
+      setTimeout(() => connectWithRetry(retryCount + 1), delay);
+    } else {
+      logger.error('Failed to connect to MongoDB after maximum retries. Exiting...');
+      process.exit(1);
+    }
+  }
+};
 
-// connectWithRetry();
+connectWithRetry();
 
 // Swagger setup
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
@@ -70,27 +70,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
   customSiteTitle: "SyncSpace API Documentation"
 }));
 
-// API Routes
-app.use('/api', routes);
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    socketConnections: global.io ? global.io.engine.clientsCount : 0,
-    uptime: process.uptime()
-  });
-});
-
-// Welcome route
-app.get("/", (req, res) => {
-  res.status(200).json({
-    message: "Welcome to SyncSpace Chat App",
-    version: process.env.npm_package_version || '1.0.0',
-    environment: process.env.NODE_ENV
-  });
-});
+app.use('/', router);
 
 // 404 handler
 app.use((req, res, next) => {

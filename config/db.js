@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const logger = require("./../utils/logger"); // Assuming a logger utility is in place
 
 // Default MongoDB URI from environment variables
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/syncspace";
+const MONGO_URI = "mongodb+srv://rajsingh01:pqSXgT8CnocuHdWw@cluster0.aerxa.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0";
 
 /**
  * Establishes a connection to MongoDB using Mongoose.
@@ -12,12 +12,8 @@ const connectDB = async () => {
     try {
         // MongoDB Connection Options
         const options = {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
             autoIndex: process.env.NODE_ENV === "development", // Auto-create indexes in dev only
             maxPoolSize: 10, // Maintain a pool of 10 connections
-            serverSelectionTimeoutMS: 5000, // Timeout after 5 seconds
-            socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
         };
 
         // Connecting to MongoDB
