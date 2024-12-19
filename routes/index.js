@@ -1,7 +1,8 @@
 // routes/index.js
 const express = require('express');
 const authRoutes = require('./auth');
-const artistRoutes = require('./artist')
+const artistRoutes = require('./artist');
+const albumRoutes = require('./album')
 const router = express.Router();
 
 // Health check route
@@ -12,6 +13,7 @@ router.get('/health', (req, res) => {
 // Auth routes
 router.use('/', authRoutes);
 router.use('/artist', artistRoutes);
+router.use('/album', albumRoutes);
 
 
 // Handle 404 errors for unknown routes

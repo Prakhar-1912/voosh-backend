@@ -8,8 +8,6 @@ const router = require('./routes/index');
 const cookieParser = require('cookie-parser');
 const mongoSanitize = require('express-mongo-sanitize');
 const logger = require('./utils/logger');
-const swaggerUi = require('swagger-ui-express');
-const swaggerSpec = require('./config/swagger');
 const jwt = require('jsonwebtoken');
 const User = require('./models/User');
 const http = require('http');
@@ -62,13 +60,6 @@ const connectWithRetry = async (retryCount = 0) => {
 };
 
 connectWithRetry();
-
-// Swagger setup
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  explorer: true,
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: "SyncSpace API Documentation"
-}));
 
 app.use('/', router);
 

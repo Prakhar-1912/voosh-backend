@@ -6,10 +6,10 @@ const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/jwt');
 const { validationResult } = require('express-validator');
 
 const COOKIE_OPTIONS = {
-    httpOnly: true, // Prevents client-side access to the cookie
-    secure: process.env.NODE_ENV === 'production', // Only sends cookie over HTTPS in production
-    sameSite: 'strict', // Protects against CSRF
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+    httpOnly: true, 
+    secure: process.env.NODE_ENV === 'production', 
+    sameSite: 'strict', 
+    maxAge: 24 * 60 * 60 * 1000 
 };
 
 const hashPassword = async (password) => {
