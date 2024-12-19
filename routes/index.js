@@ -1,6 +1,7 @@
 // routes/index.js
 const express = require('express');
 const authRoutes = require('./auth');
+const userRoutes = require('./user')
 const artistRoutes = require('./artist');
 const trackRoutes = require('./tracks');
 const favoritesRoutes = require('./favorites');
@@ -14,6 +15,7 @@ router.get('/health', (req, res) => {
 
 // Auth routes
 router.use('/', authRoutes);
+router.use('/users',userRoutes);
 router.use('/artist', artistRoutes);
 router.use('/tracks', trackRoutes);
 router.use('/favorites', favoritesRoutes);
