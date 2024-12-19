@@ -4,6 +4,7 @@ const authRoutes = require('./auth');
 const artistRoutes = require('./artist');
 const trackRoutes = require('./tracks');
 const favoritesRoutes = require('./favorites');
+const albumRoutes = require('./album')
 const router = express.Router();
 
 // Health check route
@@ -16,6 +17,7 @@ router.use('/', authRoutes);
 router.use('/artist', artistRoutes);
 router.use('/tracks', trackRoutes);
 router.use('/favorites', favoritesRoutes);
+router.use('/album', albumRoutes);
 
 // Handle 404 errors for unknown routes
 router.use((req, res, next) => {

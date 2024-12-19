@@ -1,6 +1,5 @@
 const Artist = require('../models/artist')
 
-
 exports.getArtists = async (req, res) => {
     try {
       
@@ -157,4 +156,42 @@ exports.updateArtist = async (req, res) => {
         error: error.message
       });
     }
+};
+
+exports.deleteArtist = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find and delete artist
+    const artist = await Artist.findById(id);
+
+    if (!artist) {
+      return res.status(404).json({
+        status: 404,
+        data: null,
+        message: 'Artist not found',
+        error: 'Not Found'
+      });
+    }
+
+    await artist.deleteOne();
+
+    return res.status(200).json({
+      status: 200,
+      data: {
+        artist_id: id
+      },
+      message: `Artist:${artist.name} deleted successfully.`,
+      error: null
+    });
+
+  } catch (error) {
+    console.error('Error in deleteArtist:', error);
+    return res.status(400).json({
+      status: 400,
+      data: null,
+      message: 'Failed to delete artist',
+      error: error.message
+    });
+  }
 };
