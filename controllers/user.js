@@ -43,8 +43,7 @@ exports.getAllUsers = async (req, res) => {
 exports.addUser = async (req, res) => {
     try {
         const { email, password, role } = req.body;
-        console.log(email)
-        // Validate input fields
+
         if (!email || !password || !role) {
             return res.status(400).json({
                 status: 400,
@@ -54,7 +53,6 @@ exports.addUser = async (req, res) => {
             });
         }
 
-        // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(email)) {
             return res.status(400).json({
@@ -65,7 +63,6 @@ exports.addUser = async (req, res) => {
             });
         }
 
-        // Check for forbidden role
         if (role === 'admin') {
             return res.status(403).json({
                 status: 403,
@@ -75,7 +72,6 @@ exports.addUser = async (req, res) => {
             });
         }
 
-        // Validate role
         const allowedRoles = ['editor', 'viewer'];
         if (role && !allowedRoles.includes(role.toLowerCase())) {
             return res.status(400).json({
@@ -86,7 +82,6 @@ exports.addUser = async (req, res) => {
             });
         }
 
-        // Check if email already exists
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             return res.status(409).json({
@@ -97,20 +92,16 @@ exports.addUser = async (req, res) => {
             });
         }
 
-        // Hash password
         const hashedPassword = await hashPassword(password);
 
-        // Create new user
         const newUser = new User({
             email: email.toLowerCase(),
             password: hashedPassword,
             role: role,
         });
 
-        // Save user to database
         await newUser.save();
 
-        // Respond with success
         res.status(201).json({
             status: 201,
             data: null,
@@ -119,10 +110,7 @@ exports.addUser = async (req, res) => {
         });
 
     } catch (error) {
-        // Log the error for server-side tracking
         console.error('Error adding user:', error);
-
-        // Handle specific mongo duplicate key errors
         if (error.code === 11000) {
             return res.status(409).json({
                 status: 409,
@@ -149,7 +137,6 @@ exports.deleteUser = async (req, res) => {
 
         const userToDelete = await User.findOne({ _id : user_id });
 
-        // Check if user exists
         if (!userToDelete) {
             return res.status(404).json({
                 status: 404,
@@ -159,7 +146,6 @@ exports.deleteUser = async (req, res) => {
             });
         }
 
-        // Check if trying to delete an admin user
         if (userToDelete.role === 'admin') {
             return res.status(403).json({
                 status: 403,
@@ -187,7 +173,6 @@ exports.updatePassword = async (req, res) => {
     try {
         const { old_password, new_password } = req.body;
 
-        // Input validation
         if (!old_password || !new_password) {
             return res.status(400).json({
                 status: 400,
@@ -197,7 +182,6 @@ exports.updatePassword = async (req, res) => {
             });
         }
 
-        // Validate new password
         if (new_password.length < 8) {
             return res.status(400).json({
                 status: 400,
@@ -207,7 +191,6 @@ exports.updatePassword = async (req, res) => {
             });
         }
 
-        // Find user - ensure we're using consistent ID field (userId)
         const user = await User.findById(req.user.userId);
 
         if (!user) {
@@ -219,7 +202,6 @@ exports.updatePassword = async (req, res) => {
             });
         }
 
-        // Verify old password
         const isValidPassword = await comparePassword(old_password, user.password);
 
         if (!isValidPassword) {
@@ -231,7 +213,6 @@ exports.updatePassword = async (req, res) => {
             });
         }
 
-        // Check if new password is same as old password
         const isSamePassword = await comparePassword(new_password, user.password);
         if (isSamePassword) {
             return res.status(400).json({
@@ -242,7 +223,6 @@ exports.updatePassword = async (req, res) => {
             });
         }
 
-        // Hash new password and update
         const hashedPassword = await hashPassword(new_password);
         
         await User.findByIdAndUpdate(req.user.userId, { 

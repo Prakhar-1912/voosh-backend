@@ -5,7 +5,6 @@ const Album = require('../models/album');
 
 const getTracks = async (req, res) => {
     try {
-        // Extract query parameters with defaults
         const {
             limit = 5,
             offset = 0,
@@ -14,11 +13,9 @@ const getTracks = async (req, res) => {
             hidden
         } = req.query;
 
-        // Construct filter object
         const filter = {};
 
         if (artist_id) {
-            // Ensure the artist exists before querying tracks
             const artistExists = await Artist.findById({ _id: artist_id });
             if (!artistExists) {
                 return res.status(404).json({
@@ -31,7 +28,6 @@ const getTracks = async (req, res) => {
         }
 
         if (album_id) {
-            // Ensure the album exists before querying tracks
             const albumExists = await Album.findById({ _id: album_id });
             if (!albumExists) {
                 return res.status(404).json({
@@ -44,17 +40,15 @@ const getTracks = async (req, res) => {
         }
 
         if (hidden !== undefined) {
-            filter.hidden = hidden === 'true'; // Convert string to boolean
+            filter.hidden = hidden === 'true';
         }
 
-        // Fetch tracks based on filter, limit, and offset
         const tracks = await Track.find(filter)
             .populate('artist_id', 'name')
             .populate('album_id', 'name')
             .skip(parseInt(offset))
             .limit(parseInt(limit));
 
-        // If no tracks found
         if (tracks.length === 0) {
             return res.status(404).json({
                 status: 404,
@@ -63,7 +57,6 @@ const getTracks = async (req, res) => {
             });
         }
 
-        // Return the response
         res.status(200).json({
             status: 200,
             data: tracks.map(track => ({
@@ -89,10 +82,8 @@ const getTracks = async (req, res) => {
 
 const getTrackById = async (req, res) => {
     try {
-        // Extract track ID from the request parameters
         const { id } = req.params;
 
-        // Validate the track ID
         if (!id) {
             return res.status(400).json({
                 status: 400,
@@ -101,10 +92,8 @@ const getTrackById = async (req, res) => {
             });
         }
 
-        // Fetch the track by ID
-        const track = await Track.findOne({ track_id: id }).lean(); // Return plain JS object
+        const track = await Track.findOne({ track_id: id }).lean(); 
 
-        // If track not found
         if (!track) {
             return res.status(404).json({
                 status: 404,
@@ -113,18 +102,15 @@ const getTrackById = async (req, res) => {
             });
         }
 
-        // Fetch related artist and album details
         const artist = track.artist_id ? await Artist.findOne({ artist_id: track.artist_id }).lean() : null;
         const album = track.album_id ? await Album.findOne({ album_id: track.album_id }).lean() : null;
 
-        // Enrich track data with artist and album names
         const enrichedTrack = {
             ...track,
             artist_name: artist ? artist.name : null,
             album_name: album ? album.name : null
         };
 
-        // Return the enriched track data
         res.status(200).json({
             status: 200,
             data: enrichedTrack,
@@ -147,8 +133,6 @@ const addTrack = async (req, res) => {
 
         console.log(artist_id, album_id);
 
-
-        // Validate required fields
         if (!artist_id || !album_id || !name || !duration) {
             return res.status(400).json({
                 status: 400,
@@ -157,7 +141,6 @@ const addTrack = async (req, res) => {
             });
         }
 
-        // Verify artist exists
         const artist = await Artist.findById(artist_id);
         if (!artist) {
             return res.status(404).json({
@@ -168,7 +151,6 @@ const addTrack = async (req, res) => {
             });
         }
 
-        // Verify album exists
         const album = await Album.findById(album_id);
         if (!album) {
             return res.status(404).json({
@@ -179,7 +161,6 @@ const addTrack = async (req, res) => {
             });
         }
 
-        // Create a new track document
         const newTrack = new Track({
             artist_id,
             album_id,
@@ -188,14 +169,9 @@ const addTrack = async (req, res) => {
             hidden: hidden || false 
         });
 
-        // Save the track to the database
         await newTrack.save();
-
-        // Add the album ID to the artist's albums array
         artist.tracks.push(newTrack._id);
         await artist.save();
-
-        // Add the album ID to the artist's albums array
         album.tracks.push(newTrack._id);
         await album.save();
         
@@ -220,7 +196,6 @@ const updateTrack = async (req, res) => {
         const id = req.params.id;
         const updates = req.body;
 
-        // Validate track ID
         if (!id) {
             return res.status(400).json({
                 status: 400,
@@ -229,7 +204,6 @@ const updateTrack = async (req, res) => {
             });
         }
 
-        // Validate that updates are provided
         if (!updates || Object.keys(updates).length === 0) {
             return res.status(400).json({
                 status: 400,
@@ -238,14 +212,12 @@ const updateTrack = async (req, res) => {
             });
         }
 
-        // Find and update the track
         const updatedTrack = await Track.findByIdAndUpdate(
             { _id: id },
             updates,
             { new: true, runValidators: true }
         ).lean();
 
-        // If track not found
         if (!updatedTrack) {
             return res.status(404).json({
                 status: 404,
@@ -254,7 +226,6 @@ const updateTrack = async (req, res) => {
             });
         }
 
-        // Respond with success (204 No Content)
         res.status(204).send();
     } catch (error) {
         console.error("Error updating track:", error);
@@ -288,12 +259,10 @@ const deleteTrackById = async (req, res) => {
             });
         }
 
-         // Remove the album ID from the artist's albums array
          await Artist.findByIdAndUpdate(track.artist_id, {
             $pull: { tracks: track._id }
         });
         
-         // Remove the album ID from the artist's albums array
          await Album.findByIdAndUpdate(track.album_id, {
             $pull: { tracks: track._id }
         });

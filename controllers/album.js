@@ -93,7 +93,6 @@ exports.addAlbum = async (req, res) => {
             });
         }
 
-        // Verify artist exists
         const artist = await Artist.findById(artist_id);
         if (!artist) {
             return res.status(404).json({
@@ -104,7 +103,6 @@ exports.addAlbum = async (req, res) => {
             });
         }
 
-        // Create new album
         const album = new Album({
             artist_id,
             name,
@@ -113,7 +111,6 @@ exports.addAlbum = async (req, res) => {
         });
         await album.save();
 
-        // Add the album ID to the artist's albums array
         artist.albums.push(album._id);
         await artist.save();
 
@@ -151,7 +148,6 @@ exports.updateAlbum = async (req, res) => {
             });
         }
 
-        // Update only provided fields
         Object.keys(updateData).forEach(key => {
             if (updateData[key] !== undefined) {
                 album[key] = updateData[key];
@@ -188,7 +184,6 @@ exports.deleteAlbum = async (req, res) => {
             });
         }
 
-        // Remove the album ID from the artist's albums array
         await Artist.findByIdAndUpdate(album.artist_id, {
             $pull: { albums: album._id }
         });

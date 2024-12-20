@@ -90,7 +90,6 @@ exports.addArtist = async (req, res) => {
         })
       }
 
-      // Create new artist
       const artist = new Artist({
         name,
         grammy,
@@ -138,7 +137,6 @@ exports.updateArtist = async (req, res) => {
         });
       }
 
-      // Update only provided fields
       Object.keys(updateData).forEach(key => {
         if (updateData[key] !== undefined) {
           artist[key] = updateData[key];

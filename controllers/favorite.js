@@ -2,12 +2,10 @@
 const Favorite = require('../models/favorites');
 const User = require('../models/User');
 
-// Controller to handle POST /favorites/add-favorite
 const addFavorite = async (req, res) => {
     try {
         const { category, item_id } = req.body;
 
-        // Validate category
         if (!['artist', 'album', 'track'].includes(category)) {
             return res.status(400).json({
                 status: 400,
@@ -17,7 +15,6 @@ const addFavorite = async (req, res) => {
             });
         }
 
-        // Create new favorite
         const favorite = new Favorite({
             user: req.user.userId,
             category,
@@ -26,7 +23,6 @@ const addFavorite = async (req, res) => {
 
         await favorite.save();
 
-        // Add favorite reference to user
         const user = await User.findById({_id: req.user.userId});
         console.log("user", user);
 
@@ -60,14 +56,12 @@ const addFavorite = async (req, res) => {
     }
 };
 
-// Controller to handle GET /favorites/:category
 const getFavoritesByCategory = async (req, res) => {
     try {
         const category  = req.params.category;
         const limit = parseInt(req.query.limit) || 5;
         const offset = parseInt(req.query.offset) || 0;
 
-        // Validate category
         if (!['artist', 'album', 'track'].includes(category)) {
             return res.status(400).json({
                 status: 400,
@@ -77,8 +71,6 @@ const getFavoritesByCategory = async (req, res) => {
             });
         }
 
-        console.log(req.user, category)
-
         const favorites = await Favorite.find({
             user: req.user.userId,
             category: category
@@ -86,10 +78,6 @@ const getFavoritesByCategory = async (req, res) => {
         .skip(offset)
         .limit(limit)
         .sort({ createdAt: -1 });
-
-        
-
-        console.log('favorites', favorites)
 
         return res.status(200).json({
             status: 200,
@@ -108,7 +96,6 @@ const getFavoritesByCategory = async (req, res) => {
     }
 };
 
-// Controller to handle DELETE /favorites/remove-favorite/:id
 const removeFavoriteById = async (req, res) => {
     try {
         const id  = req.params.id;
@@ -126,10 +113,7 @@ const removeFavoriteById = async (req, res) => {
             });
         }
 
-        // Remove favorite
         await Favorite.findByIdAndDelete(id);
-
-        // Remove favorite reference from user
         await User.findByIdAndUpdate(
             req.user._id,
             { $pull: { favorites: id } }
