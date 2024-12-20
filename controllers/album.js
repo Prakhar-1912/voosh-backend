@@ -119,7 +119,7 @@ exports.addAlbum = async (req, res) => {
 
         return res.status(201).json({
             status: 201,
-            data: album,
+            data: null,
             message: 'Album created successfully.',
             error: null
         });

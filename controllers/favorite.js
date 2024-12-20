@@ -1,10 +1,11 @@
 // Import necessary models
 const Favorite = require('../models/favorites');
+const User = require('../models/User');
 
 // Controller to handle POST /favorites/add-favorite
 const addFavorite = async (req, res) => {
     try {
-        const { category, item_id, name } = req.body;
+        const { category, item_id } = req.body;
 
         // Validate category
         if (!['artist', 'album', 'track'].includes(category)) {
@@ -18,19 +19,20 @@ const addFavorite = async (req, res) => {
 
         // Create new favorite
         const favorite = new Favorite({
-            user: req.user._id,
+            user: req.user.userId,
             category,
-            item_id,
-            name
+            item_id
         });
 
         await favorite.save();
 
         // Add favorite reference to user
-        await User.findByIdAndUpdate(
-            req.user._id,
-            { $push: { favorites: favorite._id } }
-        );
+        const user = await User.findById({_id: req.user.userId});
+        console.log("user", user);
+
+        user.favorites.push(favorite._id);
+        await user.save();
+        
 
         return res.status(201).json({
             status: 201,
@@ -75,23 +77,23 @@ const getFavoritesByCategory = async (req, res) => {
             });
         }
 
+        console.log(req.user, category)
+
         const favorites = await Favorite.find({
-            user: req.user._id,
+            user: req.user.userId,
             category: category
         })
         .skip(offset)
         .limit(limit)
         .sort({ createdAt: -1 });
 
+        
+
+        console.log('favorites', favorites)
+
         return res.status(200).json({
             status: 200,
-            data: favorites.map(fav => ({
-                favorite_id: fav._id,
-                category: fav.category,
-                item_id: fav.item_id,
-                name: fav.name,
-                created_at: fav.createdAt
-            })),
+            data: null,
             message: "Favorites retrieved successfully.",
             error: null
         });
@@ -112,8 +114,7 @@ const removeFavoriteById = async (req, res) => {
         const id  = req.params.id;
 
         const favorite = await Favorite.findOne({
-            _id: id,
-            user: req.user._id
+            _id: id
         });
 
         if (!favorite) {
