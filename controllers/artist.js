@@ -83,7 +83,9 @@ exports.getArtistById = async (req, res) => {
 exports.addArtist = async (req, res) => {
     try {
       const { name, grammy, hidden } = req.body;
-    
+      
+      console.log(name ,grammy, hidden);
+      
       if(!name || !grammy || !hidden){
         return res.status(400).json({
             status: 400,

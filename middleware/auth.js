@@ -2,10 +2,17 @@ const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../config/jwt');
 
 const authMiddleware = (req, res, next) => {
-    // Get token from cookie
-    const token = req.cookies.token;
+    const authorizationHeader = req.headers.authorization;
+    const token = authorizationHeader?.split(' ')[1]
+
     if (!token) {
-        return res.status(401).json({ message: 'Authentication required' });
+    console.log("reached here now");
+        return res.status(401).json({
+            status: 401,
+            data:null, 
+            message: 'Unauthorized Access',
+            error: null 
+        });
     }
 
     try {
@@ -15,7 +22,12 @@ const authMiddleware = (req, res, next) => {
         
         next();
     } catch (error) {
-        return res.status(403).json({ message: 'Invalid or expired token' });
+        return res.status(401).json({
+            status: 401,
+            data:null, 
+            message: 'Token Expired',
+            error: null 
+        });
     }
 };
 

@@ -1,24 +1,18 @@
 // controllers/auth.controller.js
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+
 const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/jwt');
-const { validationResult } = require('express-validator');
+const jwtUtils = require('../utils/password.utils')
+
+const hashPassword = jwtUtils.hashPassword;
+const comparePassword = jwtUtils.comparePassword;
 
 const COOKIE_OPTIONS = {
     httpOnly: true, 
     secure: process.env.NODE_ENV === 'production', 
     sameSite: 'strict', 
     maxAge: 24 * 60 * 60 * 1000 
-};
-
-const hashPassword = async (password) => {
-    const salt = await bcrypt.genSalt(10);
-    return bcrypt.hash(password, salt);
-};
-
-const comparePassword = async (password, hash) => {
-    return bcrypt.compare(password, hash);
 };
 
 exports.signup = async (req, res, next) => {
@@ -66,9 +60,6 @@ exports.signup = async (req, res, next) => {
             { expiresIn: JWT_EXPIRES_IN }
         );
 
-        // Set JWT token in cookie
-        res.cookie('token', token, COOKIE_OPTIONS);
-
         res.status(201).json({
             status: 201,
             message: 'User registered successfully',
@@ -90,6 +81,15 @@ exports.login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
+        if (!email || !password) {
+            return res.status(400).json({
+                status: 400,
+                data: null,
+                message: 'Bad Request, missing field',
+                error: null
+            });
+        }
+
         const user = await User.findOne({
             $or: [{ email }]
         });
@@ -99,7 +99,7 @@ exports.login = async (req, res, next) => {
             status: 404,
             data: null,
             message: 'User Not Found',
-            error: error 
+            error: null 
         });
         }
         
@@ -122,9 +122,6 @@ exports.login = async (req, res, next) => {
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
         );
-
-        // Set JWT token in cookie
-        res.cookie('token', token, COOKIE_OPTIONS);
 
         res.status(200).json({
             status: 200,
@@ -149,7 +146,12 @@ exports.login = async (req, res, next) => {
 
 exports.logout = async (req, res) => {
     res.clearCookie('token', COOKIE_OPTIONS);
-    res.json({ message: 'Logged out successfully' });
+    res.json({
+        status: 200,
+         message: 'User logged out successfully',
+         data: null,
+         error: null 
+    });
 };
 
 

@@ -4,25 +4,24 @@ const mongoose = require('mongoose');
 // Define the Artist schema
 const artistSchema = new mongoose.Schema({
     artist_id: {
-        type: String, // UUID as a string
-        required: true,
+        type: String, 
         unique: true,
     },
     name: {
         type: String,
         required: true,
-        trim: true, // Removes leading and trailing whitespaces
+        trim: true, 
     },
     grammy: {
-        type: Boolean,
-        default: false, // Default value if not provided
+        type: Number,
+        required: true,
     },
     hidden: {
         type: Boolean,
-        default: false, // Default value if not provided
+        default: false, 
     }
 }, {
-    timestamps: true // Automatically add `createdAt` and `updatedAt` fields
+    timestamps: true 
 });
 
 // Create the Artist model

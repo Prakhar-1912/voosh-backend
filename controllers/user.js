@@ -1,57 +1,34 @@
+const User = require('../models/User')
+const jwtUtils = require('../utils/password.utils')
+const bcrypt = require('bcryptjs');
+const hashPassword = jwtUtils.hashPassword;
+
 exports.getAllUsers = async (req, res) => {
     try {
-        // Validate request parameters
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(400).json({
-                status: 400,
-                data: null,
-                message: 'Bad Request',
-                error: errors.array()
-            });
-        }
-
-        // Extract query parameters with defaults
         const limit = parseInt(req.query.limit) || 5;
         const offset = parseInt(req.query.offset) || 0;
-        const role = req.query.role ? req.query.role.toLowerCase() : null;
-
-        // Construct query filter
+        
         const queryFilter = {};
-        if (role) {
-            queryFilter.role = role;
+        if (req.query.role) {
+            queryFilter.role = req.query.role;
         }
 
-        // Ensure only users under the same admin are fetched
-        queryFilter.admin_id = req.user.id; // Assumes authentication middleware sets req.user
+        queryFilter.admin_id = req.user.id;
 
-        // Fetch users with pagination and optional role filtering
         const users = await User.find(queryFilter)
-            .select('user_id email role created_at') // Select only required fields
+            .select('user_id email role created_at') 
             .limit(limit)
             .skip(offset)
-            .sort({ created_at: -1 }); // Sort by most recent first
+            .sort({ created_at: -1 });
 
-        // Count total users for this admin (for potential frontend pagination)
-        const totalUsers = await User.countDocuments(queryFilter);
-
-        // Prepare response
         res.status(200).json({
             status: 200,
             data: users,
             message: 'Users retrieved successfully.',
-            error: null,
-            pagination: {
-                total: totalUsers,
-                limit,
-                offset
-            }
+            error: null
         });
     } catch (error) {
-        // Log the error for server-side tracking
         console.error('Error retrieving users:', error);
-
-        // Send generic error response
         res.status(500).json({
             status: 500,
             data: null,
@@ -157,33 +134,18 @@ exports.addUser = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
     try {
-        // Check if user is authenticated
-        if (!req.user) {
-            return res.status(401).json({
-                status: 401,
-                data: null,
-                message: 'Unauthorized Access',
-                error: 'Authentication required'
-            });
-        }
-
-        // Check if user has admin role
-        if (req.user.role !== 'admin') {
-            return res.status(403).json({
-                status: 403,
-                data: null,
-                message: 'Forbidden Access',
-                error: 'Admin privileges required for this operation'
-            });
-        }
-
         const { user_id } = req.params;
 
-        // Find the user to be deleted
-        const userToDelete = await User.findOne({ 
-            user_id: user_id,
-            admin_id: req.user.id // Ensure the user belongs to the current admin
-        });
+        if(!user_id){
+            return res.status(400).json({
+                    "status": 400,
+                    "data": null,
+                    "message": "Bad Request",
+                    "error": null
+            })
+        }
+
+        const userToDelete = await User.findOne({ _id : user_id });
 
         // Check if user exists
         if (!userToDelete) {
@@ -205,23 +167,8 @@ exports.deleteUser = async (req, res) => {
             });
         }
 
-        // Check if trying to delete a user from another admin
-        if (userToDelete.admin_id.toString() !== req.user.id.toString()) {
-            return res.status(403).json({
-                status: 403,
-                data: null,
-                message: 'Forbidden Access',
-                error: 'You can only delete users under your administration'
-            });
-        }
+        await User.deleteOne({ _id: user_id });
 
-        // Delete the user
-        await User.deleteOne({ 
-            user_id: user_id,
-            admin_id: req.user.id 
-        });
-
-        // Respond with success
         res.status(200).json({
             status: 200,
             data: null,
@@ -230,26 +177,14 @@ exports.deleteUser = async (req, res) => {
         });
 
     } catch (error) {
-        // Log the error for server-side tracking
         console.error('Error deleting user:', error);
     }
 };
 
 exports.updatePassword = async (req, res) => {
     try {
-        // Check if user is authenticated
-        if (!req.user) {
-            return res.status(401).json({
-                status: 401,
-                data: null,
-                message: 'Unauthorized Access',
-                error: 'Authentication required'
-            });
-        }
-
         const { old_password, new_password } = req.body;
 
-        // Validate request body
         if (!old_password || !new_password) {
             return res.status(400).json({
                 status: 400,
@@ -269,8 +204,8 @@ exports.updatePassword = async (req, res) => {
             });
         }
 
-        // Find the user
-        const user = await User.findOne({ user_id: req.user.user_id });
+        console.log(req.user)
+        const user = await User.findOne({ _id: req.user.userId });
 
         if (!user) {
             return res.status(404).json({
@@ -282,7 +217,12 @@ exports.updatePassword = async (req, res) => {
         }
 
         // Verify old password
+
+        console.log(user.password);
+
         const isValidPassword = await bcrypt.compare(old_password, user.password);
+        console.log(isValidPassword);
+
         if (!isValidPassword) {
             return res.status(401).json({
                 status: 401,
@@ -293,7 +233,7 @@ exports.updatePassword = async (req, res) => {
         }
 
         // Check if new password is same as old password
-        const isSamePassword = await bcrypt.compare(new_password, user.password);
+        const isSamePassword =  bcrypt.compare(new_password, user.password);
         if (isSamePassword) {
             return res.status(400).json({
                 status: 400,
@@ -303,39 +243,17 @@ exports.updatePassword = async (req, res) => {
             });
         }
 
-        // Hash new password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(new_password, salt);
 
-        // Update password
         await User.updateOne(
-            { user_id: req.user.user_id },
+            { _id: req.user.user_id },
             { $set: { password: hashedPassword } }
         );
 
-        // Return 204 No Content for successful update
-        res.status(204).send();
+        return res.sendStatus(204);
 
     } catch (error) {
-        // Log the error for server-side tracking
         console.error('Error updating password:', error);
-
-        // Handle token verification errors
-        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-            return res.status(401).json({
-                status: 401,
-                data: null,
-                message: 'Unauthorized Access',
-                error: 'Invalid or expired token'
-            });
-        }
-
-        // Send generic error response
-        res.status(500).json({
-            status: 500,
-            data: null,
-            message: 'Internal Server Error',
-            error: 'Unable to update password'
-        });
     }
 };

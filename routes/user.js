@@ -7,7 +7,7 @@ const userController = require('../controllers/user')
 //routes
 router.get('/', authMiddleware, roleAuth(['admin']), userController.getAllUsers)
 router.post('/add-user', authMiddleware, roleAuth(['admin']), userController.addUser)
-router.post('/:id', authMiddleware, roleAuth(['admin']), userController.deleteUser)
+router.delete('/:user_id', authMiddleware, roleAuth(['admin']), userController.deleteUser)
 router.put('/update-password', authMiddleware, userController.updatePassword)
 
 

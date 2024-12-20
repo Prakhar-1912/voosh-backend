@@ -16,7 +16,7 @@ router.get('/health', (req, res) => {
 // Auth routes
 router.use('/', authRoutes);
 router.use('/users',userRoutes);
-router.use('/artist', artistRoutes);
+router.use('/artists', artistRoutes);
 router.use('/tracks', trackRoutes);
 router.use('/favorites', favoritesRoutes);
 router.use('/album', albumRoutes);
