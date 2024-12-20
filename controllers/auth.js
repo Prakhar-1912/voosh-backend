@@ -109,7 +109,7 @@ exports.login = async (req, res, next) => {
                 status: 400,
                 data: null,
                 message: 'Bad Request, Invalid credentials',
-                error: error
+                error: null
             });
         }
 

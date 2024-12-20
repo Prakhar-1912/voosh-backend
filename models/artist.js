@@ -1,12 +1,7 @@
-// Import Mongoose
+//models/artist.js
 const mongoose = require('mongoose');
 
-// Define the Artist schema
 const artistSchema = new mongoose.Schema({
-    artist_id: {
-        type: String, 
-        unique: true,
-    },
     name: {
         type: String,
         required: true,
@@ -14,7 +9,7 @@ const artistSchema = new mongoose.Schema({
     },
     grammy: {
         type: Number,
-        required: true,
+        default: 0
     },
     hidden: {
         type: Boolean,
@@ -24,8 +19,6 @@ const artistSchema = new mongoose.Schema({
     timestamps: true 
 });
 
-// Create the Artist model
 const Artist = mongoose.model('Artist', artistSchema);
 
-// Export the model
 module.exports = Artist;

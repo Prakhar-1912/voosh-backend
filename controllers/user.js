@@ -9,6 +9,7 @@ exports.getAllUsers = async (req, res) => {
         const offset = parseInt(req.query.offset) || 0;
         
         const queryFilter = {};
+        
         if (req.query.role) {
             queryFilter.role = req.query.role;
         }
