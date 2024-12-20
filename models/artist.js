@@ -14,7 +14,13 @@ const artistSchema = new mongoose.Schema({
     hidden: {
         type: Boolean,
         default: false, 
-    }
+    },
+    albums: [{
+        type: mongoose.Schema.Types.ObjectId, ref: 'Album' 
+    }],
+    tracks: [{
+        type: mongoose.Schema.Types.ObjectId, ref: 'Track' 
+    }]
 }, {
     timestamps: true 
 });

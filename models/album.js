@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 
 const albumSchema = new mongoose.Schema({
+    artist_id: {
+            type: mongoose.Schema.Types.ObjectId, ref: 'Artist' 
+        },
     name: {
         type: String,
         required: true,
@@ -13,7 +16,10 @@ const albumSchema = new mongoose.Schema({
     hidden: {
         type: Boolean,
         default: false,
-    }
+    },
+    tracks: [{
+        type: mongoose.Schema.Types.ObjectId, ref: 'Track' 
+    }]
 }, {
     timestamps: true
 });

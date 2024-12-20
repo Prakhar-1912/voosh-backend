@@ -1,53 +1,59 @@
 // Import necessary models
-const Favorites = require('../models/favorites');
+const Favorite = require('../models/favorites');
 
 // Controller to handle POST /favorites/add-favorite
 const addFavorite = async (req, res) => {
     try {
-        // Extract category and item_id from the request body
-        const { category, item_id } = req.body;
+        const { category, item_id, name } = req.body;
 
-        // Validate the request body
-        if (!category || !item_id) {
+        // Validate category
+        if (!['artist', 'album', 'track'].includes(category)) {
             return res.status(400).json({
                 status: 400,
-                message: "Bad Request: Category and item ID are required.",
-                error: "Missing required fields"
+                data: null,
+                message: null,
+                error: "Invalid category. Must be artist, album, or track."
             });
         }
 
-        // Validate category type
-        const validCategories = ["artist", "album", "track"];
-        if (!validCategories.includes(category)) {
-            return res.status(400).json({
-                status: 400,
-                message: "Bad Request: Invalid category type.",
-                error: "Invalid category"
-            });
-        }
-
-        // Create a new favorite
-        const favorite = new Favorites({
-            favorite_id: item_id,
-            category: category
+        // Create new favorite
+        const favorite = new Favorite({
+            user: req.user._id,
+            category,
+            item_id,
+            name
         });
 
-        // Save the favorite to the database
         await favorite.save();
 
-        // Respond with success
-        res.status(201).json({
+        // Add favorite reference to user
+        await User.findByIdAndUpdate(
+            req.user._id,
+            { $push: { favorites: favorite._id } }
+        );
+
+        return res.status(201).json({
             status: 201,
             data: null,
             message: "Favorite added successfully.",
             error: null
         });
+
     } catch (error) {
-        console.error("Error adding favorite:", error);
-        res.status(500).json({
+        if (error.code === 11000) {
+            return res.status(400).json({
+                status: 400,
+                data: null,
+                message: null,
+                error: "Item is already in favorites."
+            });
+        }
+
+        return res.status(500).json({
             status: 500,
-            message: "Internal Server Error.",
-            error: error.message
+            data: null,
+            message: null,
+            error: "Internal server error."
         });
     }
 };
@@ -55,48 +61,47 @@ const addFavorite = async (req, res) => {
 // Controller to handle GET /favorites/:category
 const getFavoritesByCategory = async (req, res) => {
     try {
-        // Extract category, limit, and offset from request
-        const { category } = req.params;
+        const category  = req.params.category;
         const limit = parseInt(req.query.limit) || 5;
         const offset = parseInt(req.query.offset) || 0;
 
-        // Validate the category
-        if (!category || !['artist', 'album', 'track'].includes(category)) {
+        // Validate category
+        if (!['artist', 'album', 'track'].includes(category)) {
             return res.status(400).json({
                 status: 400,
-                message: "Bad Request: Invalid or missing category.",
-                error: "Invalid category"
+                data: null,
+                message: null,
+                error: "Invalid category. Must be artist, album, or track."
             });
         }
 
-        // Fetch favorites from the database
-        const favorites = await Favorites.find({ category })
-            .skip(offset)
-            .limit(limit)
-            .lean();
+        const favorites = await Favorite.find({
+            user: req.user._id,
+            category: category
+        })
+        .skip(offset)
+        .limit(limit)
+        .sort({ createdAt: -1 });
 
-        // If no favorites found
-        if (!favorites || favorites.length === 0) {
-            return res.status(404).json({
-                status: 404,
-                message: "No favorites found for the specified category.",
-                error: "No data"
-            });
-        }
-
-        // Respond with the fetched favorites
-        res.status(200).json({
+        return res.status(200).json({
             status: 200,
-            data: favorites,
+            data: favorites.map(fav => ({
+                favorite_id: fav._id,
+                category: fav.category,
+                item_id: fav.item_id,
+                name: fav.name,
+                created_at: fav.createdAt
+            })),
             message: "Favorites retrieved successfully.",
             error: null
         });
+
     } catch (error) {
-        console.error("Error retrieving favorites by category:", error);
-        res.status(500).json({
+        return res.status(500).json({
             status: 500,
-            message: "Internal Server Error.",
-            error: error.message
+            data: null,
+            message: null,
+            error: "Internal server error."
         });
     }
 };
@@ -104,43 +109,44 @@ const getFavoritesByCategory = async (req, res) => {
 // Controller to handle DELETE /favorites/remove-favorite/:id
 const removeFavoriteById = async (req, res) => {
     try {
-        // Extract favorite ID from the request parameters
-        const { id } = req.params;
+        const id  = req.params.id;
 
-        // Validate the favorite ID
-        if (!id) {
-            return res.status(400).json({
-                status: 400,
-                message: "Bad Request: Favorite ID is required.",
-                error: "Missing favorite ID"
-            });
-        }
+        const favorite = await Favorite.findOne({
+            _id: id,
+            user: req.user._id
+        });
 
-        // Find and delete the favorite
-        const deletedFavorite = await Favorite.findOneAndDelete({ favorite_id: id }).lean();
-
-        // If favorite not found
-        if (!deletedFavorite) {
+        if (!favorite) {
             return res.status(404).json({
                 status: 404,
-                message: "Favorite not found.",
-                error: "Invalid favorite ID"
+                data: null,
+                message: null,
+                error: "Favorite not found."
             });
         }
 
-        // Respond with success
-        res.status(200).json({
+        // Remove favorite
+        await Favorite.findByIdAndDelete(id);
+
+        // Remove favorite reference from user
+        await User.findByIdAndUpdate(
+            req.user._id,
+            { $pull: { favorites: id } }
+        );
+
+        return res.status(200).json({
             status: 200,
             data: null,
             message: "Favorite removed successfully.",
             error: null
         });
+
     } catch (error) {
-        console.error("Error removing favorite by ID:", error);
-        res.status(500).json({
+        return res.status(500).json({
             status: 500,
-            message: "Internal Server Error.",
-            error: error.message
+            data: null,
+            message: null,
+            error: "Internal server error."
         });
     }
 };

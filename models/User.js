@@ -12,7 +12,10 @@ const userSchema = new mongoose.Schema({
     },
     role: {
         type: String
-    }
+    },
+    favorites: [{
+        type: mongoose.Schema.Types.ObjectId, ref: 'Favorite' 
+    }]
 }, {
     timestamps: true
 });

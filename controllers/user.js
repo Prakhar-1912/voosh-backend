@@ -2,6 +2,7 @@ const User = require('../models/User')
 const jwtUtils = require('../utils/password.utils')
 const bcrypt = require('bcryptjs');
 const hashPassword = jwtUtils.hashPassword;
+const comparePassword = jwtUtils.comparePassword;
 
 exports.getAllUsers = async (req, res) => {
     try {
@@ -186,6 +187,7 @@ exports.updatePassword = async (req, res) => {
     try {
         const { old_password, new_password } = req.body;
 
+        // Input validation
         if (!old_password || !new_password) {
             return res.status(400).json({
                 status: 400,
@@ -205,24 +207,20 @@ exports.updatePassword = async (req, res) => {
             });
         }
 
-        console.log(req.user)
-        const user = await User.findOne({ _id: req.user.userId });
+        // Find user - ensure we're using consistent ID field (userId)
+        const user = await User.findById(req.user.userId);
 
         if (!user) {
             return res.status(404).json({
-                status: 404,
+                status: 400,
                 data: null,
-                message: 'User not found.',
+                message: 'User not found',
                 error: null
             });
         }
 
         // Verify old password
-
-        console.log(user.password);
-
-        const isValidPassword = await bcrypt.compare(old_password, user.password);
-        console.log(isValidPassword);
+        const isValidPassword = await comparePassword(old_password, user.password);
 
         if (!isValidPassword) {
             return res.status(401).json({
@@ -234,7 +232,7 @@ exports.updatePassword = async (req, res) => {
         }
 
         // Check if new password is same as old password
-        const isSamePassword =  bcrypt.compare(new_password, user.password);
+        const isSamePassword = await comparePassword(new_password, user.password);
         if (isSamePassword) {
             return res.status(400).json({
                 status: 400,
@@ -244,17 +242,27 @@ exports.updatePassword = async (req, res) => {
             });
         }
 
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(new_password, salt);
+        // Hash new password and update
+        const hashedPassword = await hashPassword(new_password);
+        
+        await User.findByIdAndUpdate(req.user.userId, { 
+            password: hashedPassword 
+        });
 
-        await User.updateOne(
-            { _id: req.user.user_id },
-            { $set: { password: hashedPassword } }
-        );
-
-        return res.sendStatus(204);
+        return res.status(200).json({
+            status: 200,
+            data: null,
+            message: "Password updated successfully",
+            error: null
+        });
 
     } catch (error) {
         console.error('Error updating password:', error);
+        return res.status(500).json({
+            status: 500,
+            data: null,
+            message: 'Internal server error',
+            error: 'Failed to update password'
+        });
     }
 };

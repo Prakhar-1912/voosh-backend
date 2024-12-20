@@ -17,9 +17,9 @@ router.get('/health', (req, res) => {
 router.use('/', authRoutes);
 router.use('/users',userRoutes);
 router.use('/artists', artistRoutes);
+router.use('/albums', albumRoutes);
 router.use('/tracks', trackRoutes);
 router.use('/favorites', favoritesRoutes);
-router.use('/album', albumRoutes);
 
 // Handle 404 errors for unknown routes
 router.use((req, res, next) => {

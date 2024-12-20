@@ -1,66 +1,42 @@
 const Album = require('../models/album');
+const Artist = require('../models/artist');
 
 exports.getAlbums = async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 5;
         const offset = parseInt(req.query.offset) || 0;
 
-        const filter = {};
+        const query = {};
 
-        if (req.query.artist_id) {
-            // Verify artist exists
-            const artist = await Artist.findById(req.query.artist_id);
-            if (!artist) {
-                return res.status(404).json({
-                    status: 404,
-                    data: null,
-                    message: 'Artist not found, not valid artist ID',
-                    error: 'Not Found'
-                });
-            }
-            filter.artist_id = req.query.artist_id;
-        }
+        if (req.query.artist_id) query.artist_id = req.query.artist_id;
 
-        if (req.query.hidden !== undefined) {
-            filter.hidden = req.query.hidden === 'true';
-        }
+        if (req.query.hidden !== undefined) query.hidden = req.query.hidden === 'true';
+    
+        const albums = await Album.find(query)
+            .skip(offset)
+            .limit(limit)
+            .populate('artist_id', 'name');
 
-        // Join with Artist model to get artist_name
-        const albums = await Album.findAll({
-            where: filter,
-            limit,
-            offset,
-            include: [{
-                model: Artist,
-                attributes: ['name'],
-                as: 'artist'
-            }],
-            attributes: ['album_id', 'name', 'year', 'hidden']
-        });
-
-        // Format the response to match the specification
-        const formattedAlbums = albums.map(album => ({
-            album_id: album.album_id,
-            artist_name: album.artist.name,
+        const response = albums.map(album => ({
+            album_id: album._id,
+            artist_name: album.artist_id.name,
             name: album.name,
             year: album.year,
             hidden: album.hidden
         }));
 
-        return res.status(200).json({
+        res.status(200).json({
             status: 200,
-            data: formattedAlbums,
+            data: response,
             message: 'Albums retrieved successfully.',
             error: null
         });
-
     } catch (error) {
-        console.error('Error fetching albums:', error);
-        return res.status(500).json({
-            status: 500,
+        res.status(400).json({
+            status: 400,
             data: null,
-            message: 'Internal server error while fetching albums',
-            error: 'Internal server error'
+            message: 'Bad Request',
+            error: error.message
         });
     }
 };
@@ -69,14 +45,7 @@ exports.getAlbumById = async (req, res) => {
     try {
         const albumId = req.params.id;
 
-        const album = await Album.findOne({
-            where: { album_id: albumId },
-            include: [{
-                model: Artist,
-                attributes: ['name'],
-                as: 'artist'
-            }]
-        });
+        const album = await Album.findById({ _id: albumId }).populate('artist_id', 'name');
 
         if (!album) {
             return res.status(404).json({
@@ -90,8 +59,8 @@ exports.getAlbumById = async (req, res) => {
         return res.status(200).json({
             status: 200,
             data: {
-                album_id: album.album_id,
-                artist_name: album.artist.name,
+                album_id: album._id,
+                artist_name: album.artist_id.name,
                 name: album.name,
                 year: album.year,
                 hidden: album.hidden
@@ -142,12 +111,15 @@ exports.addAlbum = async (req, res) => {
             year,
             hidden
         });
-
         await album.save();
+
+        // Add the album ID to the artist's albums array
+        artist.albums.push(album._id);
+        await artist.save();
 
         return res.status(201).json({
             status: 201,
-            data: null,
+            data: album,
             message: 'Album created successfully.',
             error: null
         });
@@ -215,6 +187,11 @@ exports.deleteAlbum = async (req, res) => {
                 error: 'Not Found'
             });
         }
+
+        // Remove the album ID from the artist's albums array
+        await Artist.findByIdAndUpdate(album.artist_id, {
+            $pull: { albums: album._id }
+        });
 
         await album.deleteOne();
 
